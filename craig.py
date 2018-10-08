@@ -6,6 +6,7 @@ import requests
 import random
 import os
 from PIL import Image
+from tqdm import tqdm
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -26,15 +27,14 @@ def get_db():
 
     # for each city find the free postings, extract the 300x300 image
     # and write the image information to the database
-    for city in cities[34:]:
-        print (city)
+    for i, city in enumerate(cities):
+        print (str(i) + ' ' + city[0])
         url = city[1] + 'd/free-stuff/search/zip'
         global city_name
         city_name = city[0].replace(' ', '')
         city_name = city_name.replace('/', '')
 
         while url:
-            print ("Web Page: ", url)
             soup = soup_process(url)
             nextlink = soup.find("link", rel="next")
 
@@ -46,7 +46,7 @@ def get_db():
 def soup_process(url):
     soup = make_soup(url)
     results = soup.find_all("li", class_="result-row")
-    for i, result in enumerate(results):
+    for result in tqdm(results):
         try:
             img_url = clean_pic(result.a['data-ids'])
             img_name = img_url.split('/')[-1]
@@ -63,11 +63,11 @@ def soup_process(url):
             img = Image.open(requests.get(img_url, stream = True).raw)
             img.save(out_path)
 
-            # print ('\nimage: ', img_url, '\ncity: ', city_name)
+            # print (descr)
             db.insert(img_info)
 
         except (AttributeError, KeyError, OSError) as ex:
-            print (ex)
+            # print (ex)
             pass
 
     return soup
