@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 import datetime
-from tinydb import TinyDB, Query
+from tinydb import TinyDB, Query, where
 import urllib3
 import requests
 import random
@@ -49,22 +49,25 @@ def soup_process(url):
     for result in tqdm(results):
         try:
             img_url = clean_pic(result.a['data-ids'])
-            img_name = img_url.split('/')[-1]
-            time_stamp = result.p.time['datetime']
-            descr = result.p.a.string.strip()
 
-            img_info = {img_url: [time_stamp, city_name, descr]}
+            if not db.search(where(img_url)):
 
-            out_dir = os.path.join('.','out', city_name)
-            if not os.path.isdir(out_dir):
-                os.makedirs(out_dir)
+                img_name = img_url.split('/')[-1]
+                time_stamp = result.p.time['datetime']
+                descr = result.p.a.string.strip()
 
-            out_path = os.path.join(out_dir, img_name)
-            img = Image.open(requests.get(img_url, stream = True).raw)
-            img.save(out_path)
+                img_info = {img_url: [time_stamp, city_name, descr]}
 
-            # print (descr)
-            db.insert(img_info)
+                out_dir = os.path.join('.','out', city_name)
+                if not os.path.isdir(out_dir):
+                    os.makedirs(out_dir)
+
+                out_path = os.path.join(out_dir, img_name)
+                img = Image.open(requests.get(img_url, stream = True).raw)
+                img.save(out_path)
+
+                # print (descr)
+                db.insert(img_info)
 
         except (AttributeError, KeyError, OSError) as ex:
             # print (ex)
